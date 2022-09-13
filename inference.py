@@ -191,8 +191,9 @@ def main(args):
     print('associating multi-person prediction between snippets')
     all_frames_results, max_pid = associate_snippets(results, frame_indices, all_filenames, args)
 
-    seq_name = args.data_dir.split('/')[-1]
-    save_dir = '{}/{}_predictions'.format(args.output_dir, seq_name)
+    seq_name = os.path.basename(args.data_dir)
+    save_dir = os.path.join(os.path.dirname(args.output_dir), os.path.basename(args.output_dir), f"{os.path.basename(args.data_dir)}_predictions")
+    # save_dir = '{}/{}_predictions'.format(args.output_dir, seq_name)
     print('save visual results of each frame in {}'.format(save_dir))
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)

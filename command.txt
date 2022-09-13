@@ -1,0 +1,24 @@
+conda create -n snipper3 pip python=3.9
+conda activate snipper3
+pip install torch==1.7.1+cu110 torchvision==0.8.2+cu110 torchaudio==0.7.2 -f https://download.pytorch.org/whl/torch_stable.html
+pip install -r requirements.txt
+
+---------------
+C:\MMD\Snipper\models\ops\MultiScaleDeformableAttention.egg-info\SOURCES.txt
+の絶対パスを相対パスに変更
+→　コンパイル時に絶対パスに変わる
+
+"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Visual Studio 2019\Visual Studio Tools\VC\x64 Native Tools Command Prompt for VS 2019.lnk"
+を開く
+→　CUDA\v11.3 が、2017, 2019 しかサポートしてないため
+
+conda activate snipper
+(snipper) c:\MMD\Snipper\models\ops>python setup.py build install
+
+Finished processing dependencies for MultiScaleDeformableAttention==1.0 が出たらOK
+
+---------------
+
+python inference.py --resume "models\model\12-06_20-17-34\checkpoint.pth" --data_dir "demos\seq1" --output_dir "demos" --num_frames 4 --num_future_frames 0 --seq_gap 5 --vis_heatmap_frame_name "000005.jpg" 
+
+
