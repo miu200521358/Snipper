@@ -1,11 +1,15 @@
+import json
 import os
+import random
+
+import cv2
+import imageio
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import cv2
-import matplotlib.pyplot as plt
-import random
-import imageio
 from tqdm import tqdm
+
+from datasets.data_preprocess.dataset_util import Joint
 
 
 # helper functions
@@ -337,6 +341,126 @@ def associate_snippets(results, frame_indices, all_filenames, args):
                 all_frames_results[frame_idx] = (frame_pids, frame_data)
                 # print(frame_idx, frame_pids, frame_data.shape)
     return all_frames_results, max_pid
+
+def save_results_3d(all_frames_results, all_filenames, data_dir, save_dir, max_pid, max_depth, gap):
+
+    print('save track2d json results')
+
+    result_dir = '{}/track3d'.format(save_dir)
+    if not os.path.exists(result_dir):
+        os.mkdir(result_dir)
+
+    random.seed(13)
+    pid_count = max_pid
+    all_pids = np.arange(pid_count)
+    cmap = plt.get_cmap('rainbow')
+    pid_colors = [cmap(i) for i in np.linspace(0, 1, pid_count)]
+    random.shuffle(pid_colors)
+
+    json_datas = {}
+    for frame_idx in tqdm(all_frames_results.keys()):
+        pids, poses = all_frames_results[frame_idx]
+        for i in range(poses.shape[0]):
+            pid = pids[i]
+            if pid not in json_datas:
+                json_datas[pid] = {}
+            pose = poses[i]  # 2d pose + depth
+            # pose[:, 3] = pose[:, 3] > 0.1
+            print(f"pid: {pid}, pose: {pose}")
+            json_datas[pid][frame_idx] = {}
+            for n, (x, y, z, d) in enumerate(pose):
+                json_datas[pid][frame_idx][Joint.NAMES[n]] = {"x": str(x), "y": str(y), "z": str(z), "d": str(d)}
+
+    for pid, json_data in json_datas.items():
+        with open(os.path.join(result_dir, f"{pid:02d}.json"), mode="w") as f:
+            json.dump(json_data, f, indent=4)
+
+def save_visual_results_2d(all_frames_results, all_filenames, data_dir, save_dir, max_pid, max_depth, gap):
+    SKELETONS = [
+        (0, 9),  # root -> left_hip
+        (0, 10),  # root -> right_hip
+        (0, 2),  # root -> head_bottom
+        (2, 3),  # head_bottom -> left_shoulder
+        (2, 4),  # head_bottom -> right_shoulder
+        (2, 1),  # head_bottom -> nose
+        (3, 5),  # left_shoulder -> left_elbow
+        (5, 7),  # left_elbow -> left_wrist
+        (4, 6),  # right_shoulder -> right_elbow
+        (6, 8),  # right_elbow -> right_wrist
+        (9, 11),  # left_hip -> left_knee
+        (11, 13),  # left_knee -> left_ankle
+        (10, 12),  # right_hip -> right_knee
+        (12, 14),  # right_knee -> right_ankle
+    ]
+
+    random.seed(13)
+    pid_count = max_pid
+    all_pids = np.arange(pid_count)
+    cmap = plt.get_cmap('rainbow')
+    pid_colors = [cmap(i) for i in np.linspace(0, 1, pid_count)]
+    random.shuffle(pid_colors)
+    pid_colors_opencv = [(np.array((c[2], c[1], c[0])) * 255).astype(int).tolist() for c in pid_colors]
+
+    # sks_colors = [cmap(i) for i in np.linspace(0, 1, len(SKELETONS) + 2)]
+    # sks_colors_opencv = [(np.array((c[2], c[1], c[0])) * 255).astype(int).tolist() for c in sks_colors]
+
+    print('save track2d visual results')
+    if not os.path.exists('{}/track2d'.format(save_dir)):
+        os.mkdir('{}/track2d'.format(save_dir))
+
+    h, w = None, None
+    for frame_idx in tqdm(all_frames_results.keys()):
+        filename = all_filenames[frame_idx]
+        img = cv2.imread('{}/{}'.format(data_dir, filename))
+        h, w, _ = img.shape
+        pids, poses = all_frames_results[frame_idx]
+        for i in range(poses.shape[0]):
+            pid = pids[i]
+            pid_idx = np.where(all_pids == pid)[0][0]
+            pose = poses[i]  # 2d pose + depth
+            # pose[:, 3] = pose[:, 3] > 0.1
+            for l, (j1, j2) in enumerate(SKELETONS):
+                joint1 = pose[j1]
+                joint2 = pose[j2]
+                if joint1[3] > 0 and joint2[3] > 0:
+                    t = 4
+                    r = 8
+                    cv2.line(img,
+                             (int(joint1[0]), int(joint1[1])),
+                             (int(joint2[0]), int(joint2[1])),
+                             color=tuple(pid_colors_opencv[pid_idx]),
+                             # color=tuple(sks_colors[l]),
+                             thickness=t)
+                    cv2.circle(
+                        img,
+                        thickness=-1,
+                        center=(int(joint1[0]), int(joint1[1])),
+                        radius=r,
+                        color=tuple(pid_colors_opencv[pid_idx]),
+                    )
+                    cv2.circle(
+                        img,
+                        thickness=-1,
+                        center=(int(joint2[0]), int(joint2[1])),
+                        radius=r,
+                        color=tuple(pid_colors_opencv[pid_idx]),
+                    )
+            bbx = bbox_2d_padded(pose, 0.3, 0.3)
+            bbx_thick = 3
+            cv2.line(img, (bbx[0], bbx[1]), (bbx[0] + bbx[2], bbx[1]),
+                     color=tuple(pid_colors_opencv[pid_idx]), thickness=bbx_thick)
+            cv2.line(img, (bbx[0], bbx[1]), (bbx[0], bbx[1] + bbx[3]),
+                     color=tuple(pid_colors_opencv[pid_idx]), thickness=bbx_thick)
+            cv2.line(img, (bbx[0] + bbx[2], bbx[1]), (bbx[0] + bbx[2], bbx[1] + bbx[3]),
+                     color=tuple(pid_colors_opencv[pid_idx]), thickness=bbx_thick)
+            cv2.line(img, (bbx[0], bbx[1] + bbx[3]), (bbx[0] + bbx[2], bbx[1] + bbx[3]),
+                     color=tuple(pid_colors_opencv[pid_idx]), thickness=bbx_thick)
+
+            cv2.putText(img, '{:02d}'.format(pid), (bbx[0] + bbx[2] // 3, bbx[1] - 5),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1,
+                        color=tuple(pid_colors_opencv[pid_idx]), thickness=bbx_thick)
+        frame_name = filename.split('.')[0]
+        cv2.imwrite('{}/track2d/{}_track.jpg'.format(save_dir, frame_name), img)
 
 
 def save_visual_results(all_frames_results, all_filenames, data_dir, save_dir, max_pid, max_depth, gap):
