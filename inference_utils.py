@@ -25,11 +25,27 @@ def get_aug_config(img_shape, input_shape):
     bb_height = input_shape[0] * bbx_scale
     bbx = [bb_c_x, bb_c_y, bb_width, bb_height]
 
-    trans = gen_trans_from_patch_cv(bb_c_x, bb_c_y, bb_width, bb_height,
-                                    input_shape[1], input_shape[0], rot, inv=False)
+    trans = gen_trans_from_patch_cv(
+        bb_c_x,
+        bb_c_y,
+        bb_width,
+        bb_height,
+        input_shape[1],
+        input_shape[0],
+        rot,
+        inv=False,
+    )
 
-    inv_trans = gen_trans_from_patch_cv(bb_c_x, bb_c_y, bb_width, bb_height,
-                                        input_shape[1], input_shape[0], rot, inv=True)
+    inv_trans = gen_trans_from_patch_cv(
+        bb_c_x,
+        bb_c_y,
+        bb_width,
+        bb_height,
+        input_shape[1],
+        input_shape[0],
+        rot,
+        inv=True,
+    )
 
     return trans, inv_trans
 
@@ -39,7 +55,9 @@ def generate_patch_image(cvimg, do_flip, trans, input_shape=(256, 256)):
     if do_flip:
         img = img[:, ::-1, :]
 
-    img_patch = cv2.warpAffine(img, trans, (int(input_shape[1]), int(input_shape[0])), flags=cv2.INTER_LINEAR)
+    img_patch = cv2.warpAffine(
+        img, trans, (int(input_shape[1]), int(input_shape[0])), flags=cv2.INTER_LINEAR
+    )
     img_patch = img_patch.astype(np.float32) / 255
     return img_patch
 
@@ -53,7 +71,9 @@ def rotate_2d(pt_2d, rot_rad):
     return np.array([xx, yy], dtype=np.float32)
 
 
-def gen_trans_from_patch_cv(c_x, c_y, src_width, src_height, dst_width, dst_height, rot, inv=False):
+def gen_trans_from_patch_cv(
+    c_x, c_y, src_width, src_height, dst_width, dst_height, rot, inv=False
+):
     src_w = src_width
     src_h = src_height
     src_center = np.array([c_x, c_y], dtype=np.float32)
@@ -103,7 +123,9 @@ def transform_pts_np(pts, trans):
 
 def compute_match_cost(pre_frame_data, cur_frame_data, h, w, max_depth):
     # pre_frame_data: [m, k, 4], cur_frame_data [n, k, 4]
-    match_cost = pre_frame_data[:, np.newaxis] - cur_frame_data[np.newaxis, :]  # [m, n, k, 4]
+    match_cost = (
+        pre_frame_data[:, np.newaxis] - cur_frame_data[np.newaxis, :]
+    )  # [m, n, k, 4]
     match_cost[..., 0] = match_cost[..., 0] / w
     match_cost[..., 1] = match_cost[..., 1] / h
     match_cost[..., 2] = match_cost[..., 2] / max_depth
@@ -171,7 +193,8 @@ def get_all_samples(args):
             filename = all_files[idx + gap * t]
             filenames.append(filename)
             img = cv2.cvtColor(
-                cv2.imread('{}/{}'.format(data_dir, filename)), cv2.COLOR_BGR2RGB)
+                cv2.imread("{}/{}".format(data_dir, filename)), cv2.COLOR_BGR2RGB
+            )
             imgs.append(img)
 
         imgs = np.stack(imgs, axis=0)
@@ -187,14 +210,20 @@ def get_all_samples(args):
             # plt.imshow(img_patch)
             # plt.show()
 
-        imgs = torch.from_numpy(np.concatenate(trans_imgs, axis=2)).float().permute(2, 0, 1)  # [T*3, H, W]
+        imgs = (
+            torch.from_numpy(np.concatenate(trans_imgs, axis=2))
+            .float()
+            .permute(2, 0, 1)
+        )  # [T*3, H, W]
 
         samples = {}
-        samples['input_size'] = torch.from_numpy(np.array([w, h])).float()  # [2]
-        samples['img_size'] = torch.from_numpy(np.array([img_width, img_height])).float()  # [2]
-        samples['imgs'] = imgs
-        samples['filenames'] = filenames
-        samples['inv_trans'] = torch.from_numpy(inv_trans).float()
+        samples["input_size"] = torch.from_numpy(np.array([w, h])).float()  # [2]
+        samples["img_size"] = torch.from_numpy(
+            np.array([img_width, img_height])
+        ).float()  # [2]
+        samples["imgs"] = imgs
+        samples["filenames"] = filenames
+        samples["inv_trans"] = torch.from_numpy(inv_trans).float()
         all_samples.append(samples)
     return all_samples, frame_indices, all_files
 
@@ -209,14 +238,14 @@ def associate_snippets(results, frame_indices, all_filenames, args):
     for snippet_idx, result in enumerate(results):
         # print(snippet_idx, result['filenames'])
 
-        pred_human = result['human_score'] > 0.5  # [n_query, T]
+        pred_human = result["human_score"] > 0.5  # [n_query, T]
         exist_preds = np.sum(pred_human, axis=1) > 0
 
         pred_human = pred_human[exist_preds]  # [n, T]
-        pred_kpt_scores = result['pred_kpt_scores'][exist_preds]  # [n, T, num_kpts, 1]
-        pred_kpts = result['pred_kpts'][exist_preds]  # [n, T, num_kpts, 2]
-        pred_depth = result['pred_depth'][exist_preds]  # [n, T, num_kpts, 1]
-        inv_trans = result['inv_trans']
+        pred_kpt_scores = result["pred_kpt_scores"][exist_preds]  # [n, T, num_kpts, 1]
+        pred_kpts = result["pred_kpts"][exist_preds]  # [n, T, num_kpts, 2]
+        pred_depth = result["pred_depth"][exist_preds]  # [n, T, num_kpts, 1]
+        inv_trans = result["inv_trans"]
 
         if snippet_idx == 0:
             n = pred_human.shape[0]
@@ -224,7 +253,7 @@ def associate_snippets(results, frame_indices, all_filenames, args):
             max_pid = max_pid + n
 
             for t in range(num_frames):
-                filename = result['filenames'][t]
+                filename = result["filenames"][t]
                 # print(filename, all_filenames[frame_indices[snippet_idx] + t * gap])
                 assert filename == all_filenames[frame_indices[snippet_idx] + t * gap]
                 frame_idx = frame_indices[snippet_idx] + t * gap
@@ -236,7 +265,9 @@ def associate_snippets(results, frame_indices, all_filenames, args):
                 _pred_kpts = transform_pts_np(_pred_kpts, inv_trans)
 
                 # [n, num_kpts, 4]
-                frame_data = np.concatenate([_pred_kpts, _pred_depth, _pred_kpt_scores], axis=-1)
+                frame_data = np.concatenate(
+                    [_pred_kpts, _pred_depth, _pred_kpt_scores], axis=-1
+                )
                 frame_data[:, 0, :] = (frame_data[:, 9, :] + frame_data[:, 10, :]) / 2
                 frame_pids = seq_pids[_exist_person]
                 all_frames_results[frame_idx] = (frame_pids, frame_data)
@@ -257,8 +288,12 @@ def associate_snippets(results, frame_indices, all_filenames, args):
             _pred_kpt_scores = pred_kpt_scores[cur_exist_pred, 0]  # [m, num_kpts, 1]
             _pred_depth = pred_depth[cur_exist_pred, 0]  # [m, num_kpts, 1]
             _pred_kpts = transform_pts_np(_pred_kpts, inv_trans)
-            cur_frame_data = np.concatenate([_pred_kpts, _pred_depth, _pred_kpt_scores], axis=-1)  # [n, num_kpts, 4]
-            cur_frame_data[:, 0, :] = (cur_frame_data[:, 9, :] + cur_frame_data[:, 10, :]) / 2
+            cur_frame_data = np.concatenate(
+                [_pred_kpts, _pred_depth, _pred_kpt_scores], axis=-1
+            )  # [n, num_kpts, 4]
+            cur_frame_data[:, 0, :] = (
+                cur_frame_data[:, 9, :] + cur_frame_data[:, 10, :]
+            ) / 2
 
             if cur_frame_data.shape[0] == 0 or pre_frame_data.shape[0] == 0:
                 # cur_exist_pred is all False || cur_exist_pred is all new person
@@ -269,8 +304,10 @@ def associate_snippets(results, frame_indices, all_filenames, args):
                 cur2pre_idx = np.zeros([0])
                 # print(seq_pids)
             else:
-                w, h = result['img_size']
-                match = compute_match_cost(pre_frame_data, cur_frame_data, h, w, max_depth)  # [m, n]
+                w, h = result["img_size"]
+                match = compute_match_cost(
+                    pre_frame_data, cur_frame_data, h, w, max_depth
+                )  # [m, n]
                 # print(match)
                 pre2cur_idx = np.argmin(match, axis=1)  # may repeat
                 # print(pre2cur_idx)
@@ -306,7 +343,7 @@ def associate_snippets(results, frame_indices, all_filenames, args):
 
             # collect all frames in the snippet
             for t in range(num_frames):
-                filename = result['filenames'][t]
+                filename = result["filenames"][t]
                 # print(filename, all_filenames[frame_indices[snippet_idx] + t * gap])
                 assert filename == all_filenames[frame_indices[snippet_idx] + t * gap]
                 frame_idx = frame_indices[snippet_idx] + t * gap
@@ -318,7 +355,9 @@ def associate_snippets(results, frame_indices, all_filenames, args):
                 _pred_kpts = transform_pts_np(_pred_kpts, inv_trans)
 
                 # [n, num_kpts, 4]
-                frame_data = np.concatenate([_pred_kpts, _pred_depth, _pred_kpt_scores], axis=-1)
+                frame_data = np.concatenate(
+                    [_pred_kpts, _pred_depth, _pred_kpt_scores], axis=-1
+                )
                 frame_data[:, 0, :] = (frame_data[:, 9, :] + frame_data[:, 10, :]) / 2
 
                 # average matched poses
@@ -333,8 +372,10 @@ def associate_snippets(results, frame_indices, all_filenames, args):
                     cur_score = cur_pose[:, :, 3:4]
                     frame_data[cur_idx, :, 3:4] = (pre_score + cur_score) / 2
                     # pose2d + depth
-                    frame_data[cur_idx, :, 0:3] = \
-                        (pre_score * pre_pose[:, :, 0:3] + cur_score * cur_pose[:, :, 0:3]) / (pre_score + cur_score)
+                    frame_data[cur_idx, :, 0:3] = (
+                        pre_score * pre_pose[:, :, 0:3]
+                        + cur_score * cur_pose[:, :, 0:3]
+                    ) / (pre_score + cur_score)
 
                 # [n, num_kpts, 6]
                 frame_pids = seq_pids[_exist_person]
@@ -342,40 +383,42 @@ def associate_snippets(results, frame_indices, all_filenames, args):
                 # print(frame_idx, frame_pids, frame_data.shape)
     return all_frames_results, max_pid
 
-def save_results_3d(all_frames_results, all_filenames, data_dir, save_dir, max_pid, max_depth, gap):
 
-    print('save track3d json results')
+def save_results_3d(
+    all_frames_results, all_filenames, data_dir, save_dir, max_pid, max_depth, gap
+):
 
-    result_dir = '{}/track3d'.format(save_dir)
+    print("save track3d json results")
+
+    result_dir = "{}/track3d".format(save_dir)
     if not os.path.exists(result_dir):
         os.mkdir(result_dir)
-
-    random.seed(13)
-    pid_count = max_pid
-    all_pids = np.arange(pid_count)
-    cmap = plt.get_cmap('rainbow')
-    pid_colors = [cmap(i) for i in np.linspace(0, 1, pid_count)]
-    random.shuffle(pid_colors)
 
     json_datas = {}
     for frame_idx in tqdm(all_frames_results.keys()):
         pids, poses = all_frames_results[frame_idx]
-        for i in range(poses.shape[0]):
-            pid = pids[i]
+        for p, pid in enumerate(pids):
+            kpt_3d = poses[p]
             if pid not in json_datas:
                 json_datas[pid] = {}
-            pose = poses[i]  # 2d pose + depth
-            # pose[:, 3] = pose[:, 3] > 0.1
-            # print(f"pid: {pid}, pose: {pose}")
+
             json_datas[pid][frame_idx] = {}
-            for n, (x, y, z, d) in enumerate(pose):
-                json_datas[int(pid)][int(frame_idx)][Joint.NAMES[n]] = {"x": str(x), "y": str(y), "z": str(z), "d": str(d)}
+            for n, (x, y, z, d) in enumerate(kpt_3d):
+                json_datas[int(pid)][int(frame_idx)][Joint.NAMES[n]] = {
+                    "x": str(x),
+                    "y": str(y),
+                    "z": str(z),
+                    "d": str(d),
+                }
 
     for pid, json_data in json_datas.items():
         with open(os.path.join(result_dir, f"{pid:02d}.json"), mode="w") as f:
             json.dump(json_data, f, indent=4)
 
-def save_visual_results_2d(all_frames_results, all_filenames, data_dir, save_dir, max_pid, max_depth, gap):
+
+def save_visual_results_2d(
+    all_frames_results, all_filenames, data_dir, save_dir, max_pid, max_depth, gap
+):
     SKELETONS = [
         (0, 9),  # root -> left_hip
         (0, 10),  # root -> right_hip
@@ -396,22 +439,24 @@ def save_visual_results_2d(all_frames_results, all_filenames, data_dir, save_dir
     random.seed(13)
     pid_count = max_pid
     all_pids = np.arange(pid_count)
-    cmap = plt.get_cmap('rainbow')
+    cmap = plt.get_cmap("rainbow")
     pid_colors = [cmap(i) for i in np.linspace(0, 1, pid_count)]
     random.shuffle(pid_colors)
-    pid_colors_opencv = [(np.array((c[2], c[1], c[0])) * 255).astype(int).tolist() for c in pid_colors]
+    pid_colors_opencv = [
+        (np.array((c[2], c[1], c[0])) * 255).astype(int).tolist() for c in pid_colors
+    ]
 
     # sks_colors = [cmap(i) for i in np.linspace(0, 1, len(SKELETONS) + 2)]
     # sks_colors_opencv = [(np.array((c[2], c[1], c[0])) * 255).astype(int).tolist() for c in sks_colors]
 
-    print('save track2d visual results')
-    if not os.path.exists('{}/track2d'.format(save_dir)):
-        os.mkdir('{}/track2d'.format(save_dir))
+    print("save track2d visual results")
+    if not os.path.exists("{}/track2d".format(save_dir)):
+        os.mkdir("{}/track2d".format(save_dir))
 
     h, w = None, None
     for frame_idx in tqdm(all_frames_results.keys()):
         filename = all_filenames[frame_idx]
-        img = cv2.imread('{}/{}'.format(data_dir, filename))
+        img = cv2.imread("{}/{}".format(data_dir, filename))
         h, w, _ = img.shape
         pids, poses = all_frames_results[frame_idx]
         for i in range(poses.shape[0]):
@@ -425,12 +470,14 @@ def save_visual_results_2d(all_frames_results, all_filenames, data_dir, save_dir
                 if joint1[3] > 0 and joint2[3] > 0:
                     t = 4
                     r = 8
-                    cv2.line(img,
-                             (int(joint1[0]), int(joint1[1])),
-                             (int(joint2[0]), int(joint2[1])),
-                             color=tuple(pid_colors_opencv[pid_idx]),
-                             # color=tuple(sks_colors[l]),
-                             thickness=t)
+                    cv2.line(
+                        img,
+                        (int(joint1[0]), int(joint1[1])),
+                        (int(joint2[0]), int(joint2[1])),
+                        color=tuple(pid_colors_opencv[pid_idx]),
+                        # color=tuple(sks_colors[l]),
+                        thickness=t,
+                    )
                     cv2.circle(
                         img,
                         thickness=-1,
@@ -447,23 +494,51 @@ def save_visual_results_2d(all_frames_results, all_filenames, data_dir, save_dir
                     )
             bbx = bbox_2d_padded(pose, 0.3, 0.3)
             bbx_thick = 3
-            cv2.line(img, (bbx[0], bbx[1]), (bbx[0] + bbx[2], bbx[1]),
-                     color=tuple(pid_colors_opencv[pid_idx]), thickness=bbx_thick)
-            cv2.line(img, (bbx[0], bbx[1]), (bbx[0], bbx[1] + bbx[3]),
-                     color=tuple(pid_colors_opencv[pid_idx]), thickness=bbx_thick)
-            cv2.line(img, (bbx[0] + bbx[2], bbx[1]), (bbx[0] + bbx[2], bbx[1] + bbx[3]),
-                     color=tuple(pid_colors_opencv[pid_idx]), thickness=bbx_thick)
-            cv2.line(img, (bbx[0], bbx[1] + bbx[3]), (bbx[0] + bbx[2], bbx[1] + bbx[3]),
-                     color=tuple(pid_colors_opencv[pid_idx]), thickness=bbx_thick)
+            cv2.line(
+                img,
+                (bbx[0], bbx[1]),
+                (bbx[0] + bbx[2], bbx[1]),
+                color=tuple(pid_colors_opencv[pid_idx]),
+                thickness=bbx_thick,
+            )
+            cv2.line(
+                img,
+                (bbx[0], bbx[1]),
+                (bbx[0], bbx[1] + bbx[3]),
+                color=tuple(pid_colors_opencv[pid_idx]),
+                thickness=bbx_thick,
+            )
+            cv2.line(
+                img,
+                (bbx[0] + bbx[2], bbx[1]),
+                (bbx[0] + bbx[2], bbx[1] + bbx[3]),
+                color=tuple(pid_colors_opencv[pid_idx]),
+                thickness=bbx_thick,
+            )
+            cv2.line(
+                img,
+                (bbx[0], bbx[1] + bbx[3]),
+                (bbx[0] + bbx[2], bbx[1] + bbx[3]),
+                color=tuple(pid_colors_opencv[pid_idx]),
+                thickness=bbx_thick,
+            )
 
-            cv2.putText(img, '{:02d}'.format(pid), (bbx[0] + bbx[2] // 3, bbx[1] - 5),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1,
-                        color=tuple(pid_colors_opencv[pid_idx]), thickness=bbx_thick)
-        frame_name = filename.split('.')[0]
-        cv2.imwrite('{}/track2d/{}_track.jpg'.format(save_dir, frame_name), img)
+            cv2.putText(
+                img,
+                "{:02d}".format(pid),
+                (bbx[0] + bbx[2] // 3, bbx[1] - 5),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1,
+                color=tuple(pid_colors_opencv[pid_idx]),
+                thickness=bbx_thick,
+            )
+        frame_name = filename.split(".")[0]
+        cv2.imwrite("{}/track2d/{}_track.jpg".format(save_dir, frame_name), img)
 
 
-def save_visual_results(all_frames_results, all_filenames, data_dir, save_dir, max_pid, max_depth, gap):
+def save_visual_results(
+    all_frames_results, all_filenames, data_dir, save_dir, max_pid, max_depth, gap
+):
     SKELETONS = [
         (0, 9),  # root -> left_hip
         (0, 10),  # root -> right_hip
@@ -484,22 +559,24 @@ def save_visual_results(all_frames_results, all_filenames, data_dir, save_dir, m
     random.seed(13)
     pid_count = max_pid
     all_pids = np.arange(pid_count)
-    cmap = plt.get_cmap('rainbow')
+    cmap = plt.get_cmap("rainbow")
     pid_colors = [cmap(i) for i in np.linspace(0, 1, pid_count)]
     random.shuffle(pid_colors)
-    pid_colors_opencv = [(np.array((c[2], c[1], c[0])) * 255).astype(int).tolist() for c in pid_colors]
+    pid_colors_opencv = [
+        (np.array((c[2], c[1], c[0])) * 255).astype(int).tolist() for c in pid_colors
+    ]
 
     # sks_colors = [cmap(i) for i in np.linspace(0, 1, len(SKELETONS) + 2)]
     # sks_colors_opencv = [(np.array((c[2], c[1], c[0])) * 255).astype(int).tolist() for c in sks_colors]
 
-    print('save track2d visual results')
-    if not os.path.exists('{}/track2d'.format(save_dir)):
-        os.mkdir('{}/track2d'.format(save_dir))
+    print("save track2d visual results")
+    if not os.path.exists("{}/track2d".format(save_dir)):
+        os.mkdir("{}/track2d".format(save_dir))
 
     h, w = None, None
     for frame_idx in tqdm(all_frames_results.keys()):
         filename = all_filenames[frame_idx]
-        img = cv2.imread('{}/{}'.format(data_dir, filename))
+        img = cv2.imread("{}/{}".format(data_dir, filename))
         h, w, _ = img.shape
         pids, poses = all_frames_results[frame_idx]
         for i in range(poses.shape[0]):
@@ -513,12 +590,14 @@ def save_visual_results(all_frames_results, all_filenames, data_dir, save_dir, m
                 if joint1[3] > 0 and joint2[3] > 0:
                     t = 4
                     r = 8
-                    cv2.line(img,
-                             (int(joint1[0]), int(joint1[1])),
-                             (int(joint2[0]), int(joint2[1])),
-                             color=tuple(pid_colors_opencv[pid_idx]),
-                             # color=tuple(sks_colors[l]),
-                             thickness=t)
+                    cv2.line(
+                        img,
+                        (int(joint1[0]), int(joint1[1])),
+                        (int(joint2[0]), int(joint2[1])),
+                        color=tuple(pid_colors_opencv[pid_idx]),
+                        # color=tuple(sks_colors[l]),
+                        thickness=t,
+                    )
                     cv2.circle(
                         img,
                         thickness=-1,
@@ -535,30 +614,56 @@ def save_visual_results(all_frames_results, all_filenames, data_dir, save_dir, m
                     )
             bbx = bbox_2d_padded(pose, 0.3, 0.3)
             bbx_thick = 3
-            cv2.line(img, (bbx[0], bbx[1]), (bbx[0] + bbx[2], bbx[1]),
-                     color=tuple(pid_colors_opencv[pid_idx]), thickness=bbx_thick)
-            cv2.line(img, (bbx[0], bbx[1]), (bbx[0], bbx[1] + bbx[3]),
-                     color=tuple(pid_colors_opencv[pid_idx]), thickness=bbx_thick)
-            cv2.line(img, (bbx[0] + bbx[2], bbx[1]), (bbx[0] + bbx[2], bbx[1] + bbx[3]),
-                     color=tuple(pid_colors_opencv[pid_idx]), thickness=bbx_thick)
-            cv2.line(img, (bbx[0], bbx[1] + bbx[3]), (bbx[0] + bbx[2], bbx[1] + bbx[3]),
-                     color=tuple(pid_colors_opencv[pid_idx]), thickness=bbx_thick)
+            cv2.line(
+                img,
+                (bbx[0], bbx[1]),
+                (bbx[0] + bbx[2], bbx[1]),
+                color=tuple(pid_colors_opencv[pid_idx]),
+                thickness=bbx_thick,
+            )
+            cv2.line(
+                img,
+                (bbx[0], bbx[1]),
+                (bbx[0], bbx[1] + bbx[3]),
+                color=tuple(pid_colors_opencv[pid_idx]),
+                thickness=bbx_thick,
+            )
+            cv2.line(
+                img,
+                (bbx[0] + bbx[2], bbx[1]),
+                (bbx[0] + bbx[2], bbx[1] + bbx[3]),
+                color=tuple(pid_colors_opencv[pid_idx]),
+                thickness=bbx_thick,
+            )
+            cv2.line(
+                img,
+                (bbx[0], bbx[1] + bbx[3]),
+                (bbx[0] + bbx[2], bbx[1] + bbx[3]),
+                color=tuple(pid_colors_opencv[pid_idx]),
+                thickness=bbx_thick,
+            )
 
-            cv2.putText(img, '{:02d}'.format(pid), (bbx[0] + bbx[2] // 3, bbx[1] - 5),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1,
-                        color=tuple(pid_colors_opencv[pid_idx]), thickness=bbx_thick)
-        frame_name = filename.split('.')[0]
-        cv2.imwrite('{}/track2d/{}_track.jpg'.format(save_dir, frame_name), img)
+            cv2.putText(
+                img,
+                "{:02d}".format(pid),
+                (bbx[0] + bbx[2] // 3, bbx[1] - 5),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1,
+                color=tuple(pid_colors_opencv[pid_idx]),
+                thickness=bbx_thick,
+            )
+        frame_name = filename.split(".")[0]
+        cv2.imwrite("{}/track2d/{}_track.jpg".format(save_dir, frame_name), img)
 
     # draw 3D image
-    print('save track3d visual results')
-    if not os.path.exists('{}/track3d'.format(save_dir)):
-        os.mkdir('{}/track3d'.format(save_dir))
+    print("save track3d visual results")
+    if not os.path.exists("{}/track3d".format(save_dir)):
+        os.mkdir("{}/track3d".format(save_dir))
 
     for frame_idx in tqdm(all_frames_results.keys()):
         pids, poses = all_frames_results[frame_idx]
         fig = plt.figure(figsize=(20, 20))
-        ax = fig.add_subplot(111, projection='3d')
+        ax = fig.add_subplot(111, projection="3d")
         for p, pid in enumerate(pids):
             pid_idx = np.where(all_pids == pid)[0][0]
             # draw pose
@@ -572,10 +677,22 @@ def save_visual_results(all_frames_results, all_filenames, data_dir, save_dir, m
                     z = np.array([kpt_3d[i1, 2], kpt_3d[i2, 2]])
                     # ax.plot(x, z, -y, color=sks_colors[l], linewidth=10, alpha=1)
                     ax.plot(x, z, -y, color=pid_colors[pid_idx], linewidth=4, alpha=1)
-                    ax.scatter(kpt_3d[i1, 0], kpt_3d[i1, 2], -kpt_3d[i1, 1], color=pid_colors[pid_idx],
-                               marker='o', s=6)
-                    ax.scatter(kpt_3d[i2, 0], kpt_3d[i2, 2], -kpt_3d[i2, 1], color=pid_colors[pid_idx],
-                               marker='o', s=6)
+                    ax.scatter(
+                        kpt_3d[i1, 0],
+                        kpt_3d[i1, 2],
+                        -kpt_3d[i1, 1],
+                        color=pid_colors[pid_idx],
+                        marker="o",
+                        s=6,
+                    )
+                    ax.scatter(
+                        kpt_3d[i2, 0],
+                        kpt_3d[i2, 2],
+                        -kpt_3d[i2, 1],
+                        color=pid_colors[pid_idx],
+                        marker="o",
+                        s=6,
+                    )
 
         ax.set_xticklabels([])
         ax.set_yticklabels([])
@@ -586,16 +703,22 @@ def save_visual_results(all_frames_results, all_filenames, data_dir, save_dir, m
         # ax.legend()
 
         filename = all_filenames[frame_idx]
-        frame_name = filename.split('.')[0]
+        frame_name = filename.split(".")[0]
         ax.view_init(10, -90)  # view_init(elev, azim)
-        plt.savefig('{}/track3d/{}_track3d.jpg'.format(save_dir, frame_name), bbox_inches='tight')
+        plt.savefig(
+            "{}/track3d/{}_track3d.jpg".format(save_dir, frame_name),
+            bbox_inches="tight",
+        )
         ax.view_init(70, -90)  # view_init(elev, azim)
-        plt.savefig('{}/track3d/{}_track3d_topdown.jpg'.format(save_dir, frame_name), bbox_inches='tight')
+        plt.savefig(
+            "{}/track3d/{}_track3d_topdown.jpg".format(save_dir, frame_name),
+            bbox_inches="tight",
+        )
         # plt.close()
         # plt.show()
 
     # draw trajectory
-    print('save trajectory visual results')
+    print("save trajectory visual results")
     end_frame_idx = max(list(all_frames_results.keys()))
     start_frame_idx = min(list(all_frames_results.keys()))
     _frame_length = end_frame_idx - start_frame_idx
@@ -605,7 +728,7 @@ def save_visual_results(all_frames_results, all_filenames, data_dir, save_dir, m
         # print(_end_frame_idx, start_frame_idx)
 
         fig = plt.figure(figsize=(20, 20))
-        ax = fig.add_subplot(111, projection='3d')
+        ax = fig.add_subplot(111, projection="3d")
         is_draw_pose = np.zeros([pid_count])
         for frame_idx in range(_end_frame_idx - gap, start_frame_idx - gap, -gap):
             # print(frame_idx)
@@ -622,11 +745,25 @@ def save_visual_results(all_frames_results, all_filenames, data_dir, save_dir, m
                         x = np.array([kpt_3d[i1, 0], kpt_3d[i2, 0]])
                         y = np.array([kpt_3d[i1, 1], kpt_3d[i2, 1]])
                         z = np.array([kpt_3d[i1, 2], kpt_3d[i2, 2]])
-                        ax.plot(x, z, -y, color=pid_colors[pid_idx], linewidth=4, alpha=1)
-                        ax.scatter(kpt_3d[i1, 0], kpt_3d[i1, 2], -kpt_3d[i1, 1], color=pid_colors[pid_idx], marker='o',
-                                   s=6)
-                        ax.scatter(kpt_3d[i2, 0], kpt_3d[i2, 2], -kpt_3d[i2, 1], color=pid_colors[pid_idx], marker='o',
-                                   s=6)
+                        ax.plot(
+                            x, z, -y, color=pid_colors[pid_idx], linewidth=4, alpha=1
+                        )
+                        ax.scatter(
+                            kpt_3d[i1, 0],
+                            kpt_3d[i1, 2],
+                            -kpt_3d[i1, 1],
+                            color=pid_colors[pid_idx],
+                            marker="o",
+                            s=6,
+                        )
+                        ax.scatter(
+                            kpt_3d[i2, 0],
+                            kpt_3d[i2, 2],
+                            -kpt_3d[i2, 1],
+                            color=pid_colors[pid_idx],
+                            marker="o",
+                            s=6,
+                        )
 
             # draw trajectory
             if frame_idx == end_frame_idx - gap:
@@ -665,11 +802,17 @@ def save_visual_results(all_frames_results, all_filenames, data_dir, save_dir, m
         # ax.legend()
 
         filename = all_filenames[end_frame_idx]
-        frame_name = filename.split('.')[0]
+        frame_name = filename.split(".")[0]
         ax.view_init(20, -80)  # view_init(elev, azim)
-        plt.savefig('{}/track3d/{}_trajectory3d.jpg'.format(save_dir, frame_name), bbox_inches='tight')
+        plt.savefig(
+            "{}/track3d/{}_trajectory3d.jpg".format(save_dir, frame_name),
+            bbox_inches="tight",
+        )
         ax.view_init(70, -90)  # view_init(elev, azim)
-        plt.savefig('{}/track3d/{}_trajectory3d_topdown.jpg'.format(save_dir, frame_name), bbox_inches='tight')
+        plt.savefig(
+            "{}/track3d/{}_trajectory3d_topdown.jpg".format(save_dir, frame_name),
+            bbox_inches="tight",
+        )
         # plt.close()
 
 
@@ -677,12 +820,14 @@ def save_as_videos(save_dir, all_frames_idx, all_filenames):
     # static image consists of first frame, middle frame and last frame multi-person pose tracking results
     # and also the trajectory in 3D space
     n = len(all_frames_idx)
-    frame_name = all_filenames[all_frames_idx[0]].split('.')[0]  # first frame
-    img1 = cv2.imread('{}/track2d/{}_track.jpg'.format(save_dir, frame_name))
-    frame_name = all_filenames[all_frames_idx[n // 2]].split('.')[0]  # intermediate frame
-    img2 = cv2.imread('{}/track2d/{}_track.jpg'.format(save_dir, frame_name))
-    frame_name = all_filenames[all_frames_idx[-1]].split('.')[0]  # last frame
-    img3 = cv2.imread('{}/track2d/{}_track.jpg'.format(save_dir, frame_name))
+    frame_name = all_filenames[all_frames_idx[0]].split(".")[0]  # first frame
+    img1 = cv2.imread("{}/track2d/{}_track.jpg".format(save_dir, frame_name))
+    frame_name = all_filenames[all_frames_idx[n // 2]].split(".")[
+        0
+    ]  # intermediate frame
+    img2 = cv2.imread("{}/track2d/{}_track.jpg".format(save_dir, frame_name))
+    frame_name = all_filenames[all_frames_idx[-1]].split(".")[0]  # last frame
+    img3 = cv2.imread("{}/track2d/{}_track.jpg".format(save_dir, frame_name))
 
     img_height, img_width, _ = img1.shape
     tgt_h, tgt_w = 540, 960
@@ -691,64 +836,133 @@ def save_as_videos(save_dir, all_frames_idx, all_filenames):
     img2 = cv2.warpAffine(img2, trans, (tgt_w, tgt_h), flags=cv2.INTER_LINEAR)
     img3 = cv2.warpAffine(img3, trans, (tgt_w, tgt_h), flags=cv2.INTER_LINEAR)
 
-    frame_name = all_filenames[all_frames_idx[-1]].split('.')[0]  # first frame
-    img4 = cv2.imread('{}/track3d/{}_trajectory3d.jpg'.format(save_dir, frame_name))
-    img5 = cv2.imread('{}/track3d/{}_trajectory3d_topdown.jpg'.format(save_dir, frame_name))
+    frame_name = all_filenames[all_frames_idx[-1]].split(".")[0]  # first frame
+    img4 = cv2.imread("{}/track3d/{}_trajectory3d.jpg".format(save_dir, frame_name))
+    img5 = cv2.imread(
+        "{}/track3d/{}_trajectory3d_topdown.jpg".format(save_dir, frame_name)
+    )
 
     static_frame = np.zeros([540 * 3, 960 + 1560 + 1560, 3], dtype=np.uint8) + 255
-    static_frame[0: 540, 0:960] = img1
-    static_frame[540: 540 + 540, 0:960] = img2
-    static_frame[540 + 540: 540 + 540 + 540, 0:960] = img3
-    static_frame[30:1590, 960: 960 + 1560] = img4
-    static_frame[30:1590, 960 + 1560: 960 + 1560 + 1560] = img5
+    static_frame[0:540, 0:960] = img1
+    static_frame[540 : 540 + 540, 0:960] = img2
+    static_frame[540 + 540 : 540 + 540 + 540, 0:960] = img3
+    static_frame[30:1590, 960 : 960 + 1560] = img4
+    static_frame[30:1590, 960 + 1560 : 960 + 1560 + 1560] = img5
     static_frame = cv2.resize(static_frame, (2040, 810))
 
-    cv2.putText(static_frame, 'Frame {}'.format(all_frames_idx[0]), (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
-                color=(0, 0, 255), thickness=2)
-    cv2.putText(static_frame, 'Frame {}'.format(all_frames_idx[n//2]), (10, 270 + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
-                color=(0, 0, 255), thickness=2)
-    cv2.putText(static_frame, 'Frame {}'.format(all_frames_idx[-1]), (10, 270 + 270 + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
-                color=(0, 0, 255), thickness=2)
+    cv2.putText(
+        static_frame,
+        "Frame {}".format(all_frames_idx[0]),
+        (10, 40),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.8,
+        color=(0, 0, 255),
+        thickness=2,
+    )
+    cv2.putText(
+        static_frame,
+        "Frame {}".format(all_frames_idx[n // 2]),
+        (10, 270 + 40),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.8,
+        color=(0, 0, 255),
+        thickness=2,
+    )
+    cv2.putText(
+        static_frame,
+        "Frame {}".format(all_frames_idx[-1]),
+        (10, 270 + 270 + 40),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.8,
+        color=(0, 0, 255),
+        thickness=2,
+    )
 
-    cv2.putText(static_frame, 'Trajectory (camera view)', (650, 60), cv2.FONT_HERSHEY_SIMPLEX, 1,
-                color=(0, 0, 255), thickness=2)
-    cv2.putText(static_frame, 'Trajectory (top-down view)', (1450, 50), cv2.FONT_HERSHEY_SIMPLEX, 1,
-                color=(0, 0, 255), thickness=2)
+    cv2.putText(
+        static_frame,
+        "Trajectory (camera view)",
+        (650, 60),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1,
+        color=(0, 0, 255),
+        thickness=2,
+    )
+    cv2.putText(
+        static_frame,
+        "Trajectory (top-down view)",
+        (1450, 50),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1,
+        color=(0, 0, 255),
+        thickness=2,
+    )
 
-    cv2.imwrite('{}/static_img.jpg'.format(save_dir), static_frame)
+    cv2.imwrite("{}/static_img.jpg".format(save_dir), static_frame)
 
     # save as gif
     frames = []
     for frame_idx in all_frames_idx:
-        frame_name = all_filenames[frame_idx].split('.')[0]
-        frame1 = cv2.imread('{}/track2d/{}_track.jpg'.format(save_dir, frame_name))  # 540 960
+        frame_name = all_filenames[frame_idx].split(".")[0]
+        frame1 = cv2.imread(
+            "{}/track2d/{}_track.jpg".format(save_dir, frame_name)
+        )  # 540 960
         frame1 = cv2.warpAffine(frame1, trans, (tgt_w, tgt_h), flags=cv2.INTER_LINEAR)
 
-        frame2 = cv2.imread('{}/track3d/{}_track3d.jpg'.format(save_dir, frame_name))  # 1560 1560
+        frame2 = cv2.imread(
+            "{}/track3d/{}_track3d.jpg".format(save_dir, frame_name)
+        )  # 1560 1560
 
         frame = np.zeros([810 + 1080, 960 + 1080, 3], dtype=np.uint8) + 255
         frame[0:810, :] = static_frame
-        frame[810 + 270: 810 + 270 + 540, 0:960] = frame1
-        frame[810: 810 + 1080, 960: 960 + 1080] = cv2.resize(frame2, (1080, 1080))
+        frame[810 + 270 : 810 + 270 + 540, 0:960] = frame1
+        frame[810 : 810 + 1080, 960 : 960 + 1080] = cv2.resize(frame2, (1080, 1080))
 
-        cv2.putText(frame, '2D pose', (400, 1000), cv2.FONT_HERSHEY_SIMPLEX, 1.5,
-                    color=(0, 0, 255), thickness=2)
-        cv2.putText(frame, '3D pose', (1400, 1000), cv2.FONT_HERSHEY_SIMPLEX, 1.5,
-                    color=(0, 0, 255), thickness=2)
+        cv2.putText(
+            frame,
+            "2D pose",
+            (400, 1000),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.5,
+            color=(0, 0, 255),
+            thickness=2,
+        )
+        cv2.putText(
+            frame,
+            "3D pose",
+            (1400, 1000),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.5,
+            color=(0, 0, 255),
+            thickness=2,
+        )
 
         # frames.append(frame[810:, :, :])
         frames.append(frame[:, :, ::-1])
 
-    imageio.mimsave('{}/pose_tracking.gif'.format(save_dir), frames, fps=5)
-    print('pose tracking gif saving as {}/pose_tracking.gif'.format(save_dir))
+    imageio.mimsave("{}/pose_tracking.gif".format(save_dir), frames, fps=5)
+    print("pose tracking gif saving as {}/pose_tracking.gif".format(save_dir))
 
 
 def visualize_heatmaps(heatmaps, img, save_dir, filename):
     # heatmap: [h, w, num_joints]
     # fin = cv2.addWeighted(heatmap_img, 0.7, img, 0.3, 0)
-    kpts_name = ['root', 'nose', 'neck', 'left_shoulder', 'right_shoulder',
-                 'left_elbow', 'right_elbow', 'left_wrist', 'right_wrist',
-                 'left_hip', 'right_hip', 'left_knee', 'right_knee', 'left_ankle', 'right_ankle']
+    kpts_name = [
+        "root",
+        "nose",
+        "neck",
+        "left_shoulder",
+        "right_shoulder",
+        "left_elbow",
+        "right_elbow",
+        "left_wrist",
+        "right_wrist",
+        "left_hip",
+        "right_hip",
+        "left_knee",
+        "right_knee",
+        "left_ankle",
+        "right_ankle",
+    ]
 
     img = (img * 255).astype(np.uint8)[:, :, ::-1]  # rgb -> bgr
     h, w, _ = img.shape
@@ -763,6 +977,8 @@ def visualize_heatmaps(heatmaps, img, save_dir, filename):
         heatmap_img[:, :, 2] = heatmap
         overlap_img = cv2.addWeighted(heatmap_img, 0.5, img, 0.5, 0)
 
-        frame_name = filename.split('.')[0]
-        cv2.imwrite('{}/heatmaps/{}_{}.jpg'.format(save_dir, frame_name, kpts_name[j]), overlap_img)
-
+        frame_name = filename.split(".")[0]
+        cv2.imwrite(
+            "{}/heatmaps/{}_{}.jpg".format(save_dir, frame_name, kpts_name[j]),
+            overlap_img,
+        )

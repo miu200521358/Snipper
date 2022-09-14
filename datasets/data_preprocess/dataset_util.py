@@ -1,20 +1,28 @@
-import time
+from typing import Iterator
+
 import cv2
 import numpy as np
 
 
-def panoptic_visualization(img, kpts2d, traj_ids, exist_ids, seq_name, frame_idx, skeletons, save_dir=None):
+def panoptic_visualization(
+    img, kpts2d, traj_ids, exist_ids, seq_name, frame_idx, skeletons, save_dir=None
+):
     import matplotlib.pyplot as plt
+
     # Convert from plt 0-1 RGBA colors to 0-255 BGR colors for opencv.
-    cmap = plt.get_cmap('rainbow')
+    cmap = plt.get_cmap("rainbow")
     sk_colors = [cmap(i) for i in np.linspace(0, 1, len(skeletons) + 2)]
-    sk_colors = [(np.array((c[2], c[1], c[0])) * 255).astype(int).tolist() for c in sk_colors]
+    sk_colors = [
+        (np.array((c[2], c[1], c[0])) * 255).astype(int).tolist() for c in sk_colors
+    ]
 
     pids = set(traj_ids)
     pid_count = len(pids)
-    cmap = plt.get_cmap('rainbow')
+    cmap = plt.get_cmap("rainbow")
     pid_colors = [cmap(i) for i in np.linspace(0, 1, pid_count)]
-    pid_colors = [(np.array((c[2], c[1], c[0])) * 255).astype(int).tolist() for c in pid_colors]
+    pid_colors = [
+        (np.array((c[2], c[1], c[0])) * 255).astype(int).tolist() for c in pid_colors
+    ]
 
     img = img[:, :, ::-1].copy()
     for p, pid in enumerate(exist_ids):
@@ -26,11 +34,13 @@ def panoptic_visualization(img, kpts2d, traj_ids, exist_ids, seq_name, frame_idx
             joint2 = pose[j2]
 
             if joint1[2] > 0 and joint2[2] > 0:
-                cv2.line(img,
-                         (int(joint1[0]), int(joint1[1])),
-                         (int(joint2[0]), int(joint2[1])),
-                         color=tuple(sk_colors[l]),
-                         thickness=3)
+                cv2.line(
+                    img,
+                    (int(joint1[0]), int(joint1[1])),
+                    (int(joint2[0]), int(joint2[1])),
+                    color=tuple(sk_colors[l]),
+                    thickness=3,
+                )
 
             if joint1[2] > 0:
                 cv2.circle(
@@ -39,7 +49,7 @@ def panoptic_visualization(img, kpts2d, traj_ids, exist_ids, seq_name, frame_idx
                     center=(int(joint1[0]), int(joint1[1])),
                     radius=3,
                     # color=circle_color,
-                    color=tuple(pid_colors[pid_color_idx])
+                    color=tuple(pid_colors[pid_color_idx]),
                 )
 
             if joint2[2] > 0:
@@ -49,7 +59,7 @@ def panoptic_visualization(img, kpts2d, traj_ids, exist_ids, seq_name, frame_idx
                     center=(int(joint2[0]), int(joint2[1])),
                     radius=3,
                     # color=circle_color,
-                    color=tuple(pid_colors[pid_color_idx])
+                    color=tuple(pid_colors[pid_color_idx]),
                 )
 
     if save_dir is None:
@@ -65,15 +75,19 @@ def posetrack_visualization(imgs, kpts, track_ids, fname, skeletons, save_dir=No
     import matplotlib.pyplot as plt
 
     # Convert from plt 0-1 RGBA colors to 0-255 BGR colors for opencv.
-    cmap = plt.get_cmap('rainbow')
+    cmap = plt.get_cmap("rainbow")
     sk_colors = [cmap(i) for i in np.linspace(0, 1, len(skeletons) + 2)]
-    sk_colors = [(np.array((c[2], c[1], c[0])) * 255).astype(int).tolist() for c in sk_colors]
+    sk_colors = [
+        (np.array((c[2], c[1], c[0])) * 255).astype(int).tolist() for c in sk_colors
+    ]
 
     pids = set(np.concatenate(track_ids, axis=0))
     pid_count = len(pids)
-    cmap = plt.get_cmap('rainbow')
+    cmap = plt.get_cmap("rainbow")
     pid_colors = [cmap(i) for i in np.linspace(0, 1, pid_count)]
-    pid_colors = [(np.array((c[2], c[1], c[0])) * 255).astype(int).tolist() for c in pid_colors]
+    pid_colors = [
+        (np.array((c[2], c[1], c[0])) * 255).astype(int).tolist() for c in pid_colors
+    ]
 
     for i in range(imgs.shape[0]):
         img = imgs[i, :, :, ::-1].copy()
@@ -88,11 +102,13 @@ def posetrack_visualization(imgs, kpts, track_ids, fname, skeletons, save_dir=No
                 joint2 = pose[j2]
 
                 if joint1[2] > 0 and joint2[2] > 0:
-                    cv2.line(img,
-                             (int(joint1[0]), int(joint1[1])),
-                             (int(joint2[0]), int(joint2[1])),
-                             color=tuple(sk_colors[l]),
-                             thickness=3)
+                    cv2.line(
+                        img,
+                        (int(joint1[0]), int(joint1[1])),
+                        (int(joint2[0]), int(joint2[1])),
+                        color=tuple(sk_colors[l]),
+                        thickness=3,
+                    )
 
                 if joint1[2] > 0:
                     cv2.circle(
@@ -101,7 +117,7 @@ def posetrack_visualization(imgs, kpts, track_ids, fname, skeletons, save_dir=No
                         center=(int(joint1[0]), int(joint1[1])),
                         radius=3,
                         # color=circle_color,
-                        color=tuple(pid_colors[pid_color_idx])
+                        color=tuple(pid_colors[pid_color_idx]),
                     )
 
                 if joint2[2] > 0:
@@ -111,9 +127,8 @@ def posetrack_visualization(imgs, kpts, track_ids, fname, skeletons, save_dir=No
                         center=(int(joint2[0]), int(joint2[1])),
                         radius=3,
                         # color=circle_color,
-                        color=tuple(pid_colors[pid_color_idx])
+                        color=tuple(pid_colors[pid_color_idx]),
                     )
-
 
         if save_dir is None:
             print("../vis/{}_{:04d}.jpg".format(fname, i))
@@ -124,8 +139,8 @@ def posetrack_visualization(imgs, kpts, track_ids, fname, skeletons, save_dir=No
             cv2.imwrite(save_dir, img)
 
 
-def get_colors(number_of_colors, cmap_name='rainbow'):
-    # type: (int, str) -> List[List[int]]
+def get_colors(number_of_colors, cmap_name="rainbow"):
+    # type: (int, str) -> list[list[int]]
     """
     :param number_of_colors: number of colors you want to get
     :param cmap_name: name of the colormap you want to use
@@ -153,7 +168,7 @@ def get_pose(frame_data, person_id):
 def jta_visualization(image, frame_data, seq, img_id, hide=True, save_dir=None):
     MAX_COLORS = 42
 
-    colors = get_colors(number_of_colors=MAX_COLORS, cmap_name='jet')
+    colors = get_colors(number_of_colors=MAX_COLORS, cmap_name="jet")
 
     for p_id in set(frame_data[:, 1]):
         pose = get_pose(frame_data=frame_data, person_id=p_id)
@@ -172,8 +187,10 @@ def jta_visualization(image, frame_data, seq, img_id, hide=True, save_dir=None):
 
     if save_dir is None:
         print("../vis/{}_{:03d}.jpg".format(seq, img_id))
-        cv2.imwrite("../vis/{}_{:03d}.jpg".format(seq, img_id),
-                    cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
+        cv2.imwrite(
+            "../vis/{}_{:03d}.jpg".format(seq, img_id),
+            cv2.cvtColor(image, cv2.COLOR_RGB2BGR),
+        )
     else:
         # print("{}/{}_{:03d}.jpg".format(save_dir, seq, img_id))
         # cv2.imwrite(save_dir, cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
@@ -242,11 +259,10 @@ class Pose(list):
         (12, 14),  # right_knee -> right_ankle
     ]
 
-
     SKELETON = [[l[0] + 1, l[1] + 1] for l in LIMBS]
 
     def __init__(self, joints):
-        # type: (List[Joint]) -> None
+        # type: (list[Joint]) -> None
         super().__init__(joints)
 
     @property
@@ -262,7 +278,7 @@ class Pose(list):
 
     @property
     def bbox_2d(self):
-        # type: () -> List[int]
+        # type: () -> list[int]
         """
         :return: bounding box around the pose in format [x_min, y_min, width, height]
             - x_min = x of the top left corner of the bounding box
@@ -301,7 +317,7 @@ class Pose(list):
 
     @property
     def coco_annotation(self):
-        # type: () -> Dict
+        # type: () -> dict
         """
         :return: COCO annotation dictionary of the pose
         ==========================================================
@@ -321,17 +337,18 @@ class Pose(list):
         for j in self:
             keypoints += [j.x2d, j.y2d, 2]
         annotation = {
-            'keypoints': keypoints,
-            'num_keypoints': len(self),
-            'bbox': self.bbox_2d
+            "keypoints": keypoints,
+            "num_keypoints": len(self),
+            "bbox": self.bbox_2d,
         }
         return annotation
 
     def draw(self, image, color, hide):
-        # type: (np.ndarray, List[int]) -> np.ndarray
+        # type: (np.ndarray, list[int], bool) -> np.ndarray
         """
         :param image: image on which to draw the pose
         :param color: color of the limbs make up the pose
+        :param hide: hide
         :return: image with the pose
         """
         # draw limb(s) segments
@@ -362,6 +379,7 @@ class Joint(object):
     """
     a Joint is a keypoint of the human body.
     """
+
     # # list of joint names
     # NAMES = [
     #     'head_top',
@@ -388,21 +406,21 @@ class Joint(object):
     #     'left_ankle',
     # ]
     NAMES = [
-        'root',
-        'nose',
-        'head_bottom',
-        'left_shoulder',
-        'right_shoulder',
-        'left_elbow',
-        'right_elbow',
-        'left_wrist',
-        'right_wrist',
-        'left_hip',
-        'right_hip',
-        'left_knee',
-        'right_knee',
-        'left_ankle',
-        'right_ankle'
+        "root",
+        "nose",
+        "head_bottom",
+        "left_shoulder",
+        "right_shoulder",
+        "left_elbow",
+        "right_elbow",
+        "left_wrist",
+        "right_wrist",
+        "left_hip",
+        "right_hip",
+        "left_knee",
+        "right_knee",
+        "left_ankle",
+        "right_ankle",
     ]
 
     def __init__(self, array):
@@ -435,7 +453,6 @@ class Joint(object):
         """
         return (0 <= self.x2d <= w) and (0 <= self.y2d <= h)
 
-
     @property
     def visible(self):
         # type: () -> bool
@@ -444,28 +461,25 @@ class Joint(object):
         """
         return not (self.occ or self.soc)
 
-
     @property
     def pos2d(self):
-        # type: () -> Tuple[int, int]
+        # type: () -> tuple[int, int]
         """
         :return: 2D coordinates of the joints [px]
         """
         return (self.x2d, self.y2d)
 
-
     @property
     def pos3d(self):
-        # type: () -> Tuple[float, float, float]
+        # type: () -> tuple[float, float, float]
         """
         :return: 3D coordinates of the joints [m]
         """
         return (self.x3d, self.y3d, self.z3d)
 
-
     @property
     def color(self):
-        # type: () -> Tuple[int, int, int]
+        # type: () -> tuple[int, int, int]
         """
         :return: the color with which to draw the joint;
         this color is chosen based on the visibility of the joint:
@@ -487,7 +501,7 @@ class Joint(object):
         :return: appropriate radius [px] for the circle that represents the joint;
         this radius is a function of the distance of the joint from the camera
         """
-        radius = int(round(np.power(10, 1 - (self.cam_distance/20.0))))
+        radius = int(round(np.power(10, 1 - (self.cam_distance / 20.0))))
         return radius if radius >= 1 else 1
 
     @property
@@ -505,7 +519,8 @@ class Joint(object):
         :return: image with the joint
         """
         image = cv2.circle(
-            image, thickness=-1,
+            image,
+            thickness=-1,
             center=self.pos2d,
             radius=self.radius,
             color=self.color,
@@ -513,7 +528,7 @@ class Joint(object):
         return image
 
     def __str__(self):
-        visibility = 'visible' if self.visible else 'occluded'
-        return f'{self.name}|2D:({self.x2d},{self.y2d})|3D:({self.x3d},{self.y3d},{self.z3d})|{visibility}'
+        visibility = "visible" if self.visible else "occluded"
+        return f"{self.name}|2D:({self.x2d},{self.y2d})|3D:({self.x3d},{self.y3d},{self.z3d})|{visibility}"
 
     __repr__ = __str__
