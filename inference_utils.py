@@ -396,6 +396,10 @@ def save_results_3d(
 
     json_datas = {}
     for frame_idx in tqdm(all_frames_results.keys()):
+        filename = all_filenames[frame_idx]
+        img = cv2.imread("{}/{}".format(data_dir, filename))
+        h, w, _ = img.shape
+
         pids, poses = all_frames_results[frame_idx]
         for p, pid in enumerate(pids):
             kpt_3d = poses[p]
@@ -405,9 +409,9 @@ def save_results_3d(
             json_datas[pid][frame_idx] = {}
             for n, (x, y, z, d) in enumerate(kpt_3d):
                 json_datas[int(pid)][int(frame_idx)][Joint.NAMES[n]] = {
-                    "x": str(x),
-                    "y": str(y),
-                    "z": str(z),
+                    "x": str((w / 2) - x),
+                    "y": str(h - y),
+                    "z": str(-z),
                     "d": str(d),
                 }
 
