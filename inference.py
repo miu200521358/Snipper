@@ -1,9 +1,13 @@
 import argparse
 import os
+
 import torch
 from tqdm import tqdm
+
+from inference_utils import (associate_snippets, get_all_samples,
+                             save_as_videos, save_visual_results,
+                             visualize_heatmaps)
 from models.model import build_model
-from inference_utils import get_all_samples, associate_snippets, save_visual_results, save_as_videos, visualize_heatmaps
 
 
 def get_args_parser():
