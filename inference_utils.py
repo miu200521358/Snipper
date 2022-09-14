@@ -373,8 +373,7 @@ def save_results_3d(all_frames_results, all_filenames, data_dir, save_dir, max_p
 
     for pid, json_data in json_datas.items():
         with open(os.path.join(result_dir, f"{pid:02d}.json"), mode="w") as f:
-            jd = {"joints": json_data}
-            json.dump(jd, f, indent=4)
+            json.dump(json_data, f, indent=4)
 
 def save_visual_results_2d(all_frames_results, all_filenames, data_dir, save_dir, max_pid, max_depth, gap):
     SKELETONS = [
