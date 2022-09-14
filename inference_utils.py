@@ -369,7 +369,7 @@ def save_results_3d(all_frames_results, all_filenames, data_dir, save_dir, max_p
             # print(f"pid: {pid}, pose: {pose}")
             json_datas[pid][frame_idx] = {}
             for n, (x, y, z, d) in enumerate(pose):
-                json_datas[pid][frame_idx][Joint.NAMES[n]] = {"x": str(x), "y": str(y), "z": str(z), "d": str(d)}
+                json_datas[int(pid)][int(frame_idx)][Joint.NAMES[n]] = {"x": str(x), "y": str(y), "z": str(z), "d": str(d)}
 
     for pid, json_data in json_datas.items():
         with open(os.path.join(result_dir, f"{pid:02d}.json"), mode="w") as f:
