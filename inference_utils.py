@@ -409,7 +409,7 @@ def save_results_3d(
             json_datas[pid][frame_idx] = {}
             for n, (x, y, z, d) in enumerate(kpt_3d):
                 json_datas[int(pid)][int(frame_idx)][Joint.NAMES[n]] = {
-                    "x": str((w / 2) - x),
+                    "x": str(x - (w / 2)),
                     "y": str(h - y),
                     "z": str(-z),
                     "d": str(d),
