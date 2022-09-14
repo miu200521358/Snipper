@@ -344,7 +344,7 @@ def associate_snippets(results, frame_indices, all_filenames, args):
 
 def save_results_3d(all_frames_results, all_filenames, data_dir, save_dir, max_pid, max_depth, gap):
 
-    print('save track2d json results')
+    print('save track3d json results')
 
     result_dir = '{}/track3d'.format(save_dir)
     if not os.path.exists(result_dir):
