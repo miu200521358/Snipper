@@ -411,7 +411,7 @@ def save_results_3d(
                 json_datas[int(pid)][int(frame_idx)][Joint.NAMES[n]] = {
                     "x": str(x - (w / 2)),
                     "y": str(h - y),
-                    "z": str(-z),
+                    "z": str(z),
                     "d": str(d),
                 }
 
