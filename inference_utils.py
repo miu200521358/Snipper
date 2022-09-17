@@ -408,7 +408,7 @@ def save_results_3d(
 
             bbx = bbox_2d_padded(kpt_3d, 0.3, 0.3)
 
-            json_datas[pid][frame_idx] = {
+            json_datas[int(pid)][frame_idx] = {
                 "snipper": {
                     "bbox": {
                         "x": float(bbx[0]),
