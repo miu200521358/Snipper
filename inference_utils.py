@@ -406,12 +406,26 @@ def save_results_3d(
             if pid not in json_datas:
                 json_datas[pid] = {}
 
-            json_datas[pid][frame_idx] = {}
+            bbx = bbox_2d_padded(kpt_3d, 0.3, 0.3)
+
+            json_datas[pid][frame_idx] = {
+                "snipper": {
+                    "bbox": {
+                        "x": str(bbx[0]),
+                        "y": str(bbx[1]),
+                        "width": str(bbx[2]),
+                        "height": str(bbx[3]),
+                    },
+                    "joints": {},
+                },
+            }
             for n, (x, y, z, score) in enumerate(kpt_3d):
-                json_datas[int(pid)][int(frame_idx)][Joint.NAMES[n]] = {
-                    "sx": str(x),
-                    "sy": str(y),
-                    "sz": str(-z),
+                json_datas[int(pid)][int(frame_idx)]["snipper"]["joints"][
+                    Joint.NAMES[n]
+                ] = {
+                    "x": str(x),
+                    "y": str(y),
+                    "z": str(-z),
                     "score": str(score),
                 }
 
