@@ -424,7 +424,7 @@ def save_results_3d(
                     Joint.NAMES[n]
                 ] = {
                     "x": float(x - (w / 2)),
-                    "y": float(h - y),
+                    "y": float(y),
                     "z": float(-z),
                     "score": float(score),
                 }
