@@ -410,6 +410,10 @@ def save_results_3d(
 
             json_datas[int(pid)][frame_idx] = {
                 "snipper": {
+                    "image": {
+                        "width": float(w),
+                        "height": float(h),
+                    },
                     "bbox": {
                         "x": float(bbx[0]),
                         "y": float(bbx[1]),
