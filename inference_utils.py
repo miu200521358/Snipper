@@ -411,10 +411,10 @@ def save_results_3d(
             json_datas[pid][frame_idx] = {
                 "snipper": {
                     "bbox": {
-                        "x": str(bbx[0]),
-                        "y": str(bbx[1]),
-                        "width": str(bbx[2]),
-                        "height": str(bbx[3]),
+                        "x": float(bbx[0]),
+                        "y": float(bbx[1]),
+                        "width": float(bbx[2]),
+                        "height": float(bbx[3]),
                     },
                     "joints": {},
                 },
@@ -423,10 +423,10 @@ def save_results_3d(
                 json_datas[int(pid)][int(frame_idx)]["snipper"]["joints"][
                     Joint.NAMES[n]
                 ] = {
-                    "x": str(x),
-                    "y": str(y),
-                    "z": str(-z),
-                    "score": str(score),
+                    "x": float(x),
+                    "y": float(y),
+                    "z": float(-z),
+                    "score": float(score),
                 }
 
     for pid, json_data in json_datas.items():
