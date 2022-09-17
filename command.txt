@@ -21,4 +21,4 @@ Finished processing dependencies for MultiScaleDeformableAttention==1.0 が出�
 
 python inference.py --resume "models\model\12-06_20-17-34\checkpoint.pth" --data_dir "demos\seq1" --output_dir "demos" --num_frames 4 --num_future_frames 0 --seq_gap 5 --vis_heatmap_frame_name "000005.jpg" 
 
-
+python inference.py --resume "C:\MMD\Snipper\models\model\12-06_13-31-59\checkpoint.pth" --data_dir C:\MMD\Snipper\demos\seq1 --output_dir C:\MMD\Snipper\demos --num_frames 4 --num_future_frames 0 --seq_gap 1 --vis_heatmap_frame_name "000005.jpg"

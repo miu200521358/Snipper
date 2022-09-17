@@ -390,7 +390,7 @@ def save_results_3d(
 
     print("save track3d json results")
 
-    result_dir = "{}/track3d".format(save_dir)
+    result_dir = "{}/json".format(save_dir)
     if not os.path.exists(result_dir):
         os.mkdir(result_dir)
 
@@ -407,12 +407,12 @@ def save_results_3d(
                 json_datas[pid] = {}
 
             json_datas[pid][frame_idx] = {}
-            for n, (x, y, z, d) in enumerate(kpt_3d):
+            for n, (x, y, z, score) in enumerate(kpt_3d):
                 json_datas[int(pid)][int(frame_idx)][Joint.NAMES[n]] = {
-                    "x": str(x - (w / 2)),
-                    "y": str(h - y),
-                    "z": str(z),
-                    "d": str(d),
+                    "sx": str(x),
+                    "sy": str(y),
+                    "sz": str(-z),
+                    "score": str(score),
                 }
 
     for pid, json_data in json_datas.items():
@@ -713,7 +713,7 @@ def save_visual_results(
             "{}/track3d/{}_track3d.jpg".format(save_dir, frame_name),
             bbox_inches="tight",
         )
-        ax.view_init(70, -90)  # view_init(elev, azim)
+        ax.view_init(85, -90)  # view_init(elev, azim)
         plt.savefig(
             "{}/track3d/{}_track3d_topdown.jpg".format(save_dir, frame_name),
             bbox_inches="tight",

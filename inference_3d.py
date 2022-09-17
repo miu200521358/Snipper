@@ -10,7 +10,7 @@ from inference_utils import (
     associate_snippets,
     get_all_samples,
     save_results_3d,
-    save_visual_results_2d,
+    save_visual_results,
 )
 from models.model import build_model
 
@@ -279,15 +279,15 @@ def main(args):
                     }
                 )
 
-                _heatmaps = [heatmap[i].mean(dim=-2) for heatmap in outputs["heatmaps"]]
-                heatmaps = _heatmaps[0].cpu().numpy()  # [T, h, w, num_joints]
-                _, _, h, w = imgs.shape
-                imgs = imgs[0].reshape(-1, 3, h, w).permute(0, 2, 3, 1).cpu().numpy()
-                for t in range(args.num_frames):
-                    results_heatmaps[filenames[t]] = (
-                        heatmaps[t],
-                        imgs[t],
-                    )  # [h, w, num_joints]
+                # _heatmaps = [heatmap[i].mean(dim=-2) for heatmap in outputs["heatmaps"]]
+                # heatmaps = _heatmaps[0].cpu().numpy()  # [T, h, w, num_joints]
+                # _, _, h, w = imgs.shape
+                # imgs = imgs[0].reshape(-1, 3, h, w).permute(0, 2, 3, 1).cpu().numpy()
+                # for t in range(args.num_frames):
+                #     results_heatmaps[filenames[t]] = (
+                #         heatmaps[t],
+                #         imgs[t],
+                #     )  # [h, w, num_joints]
 
             # count += 1
             # if count > 3:
@@ -298,16 +298,16 @@ def main(args):
         results, frame_indices, all_filenames, args
     )
 
-    print("save visual results of each frame in {}".format(args.output_dir))
-    save_visual_results_2d(
-        all_frames_results,
-        all_filenames,
-        args.data_dir,
-        args.output_dir,
-        max_pid,
-        args.max_depth,
-        args.seq_gap,
-    )
+    # print("save visual results of each frame in {}".format(args.output_dir))
+    # save_visual_results(
+    #     all_frames_results,
+    #     all_filenames,
+    #     args.data_dir,
+    #     args.output_dir,
+    #     max_pid,
+    #     args.max_depth,
+    #     args.seq_gap,
+    # )
 
     print("save visual results of each frame in {}".format(args.output_dir))
     save_results_3d(
@@ -334,5 +334,8 @@ if __name__ == "__main__":
     # args.input_width = img.size[0]
     # args.input_height = img.size[1]
     # args.num_frames = len(frames)
+    # args.max_depth = 100
+    args.num_future_frames = 0
+    args.num_frames = 4
     args.seq_gap = 1
     main(args)
