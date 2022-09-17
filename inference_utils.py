@@ -423,8 +423,8 @@ def save_results_3d(
                 json_datas[int(pid)][int(frame_idx)]["snipper"]["joints"][
                     Joint.NAMES[n]
                 ] = {
-                    "x": float(x),
-                    "y": float(y),
+                    "x": float(x - (w / 2)),
+                    "y": float(h - y),
                     "z": float(-z),
                     "score": float(score),
                 }
