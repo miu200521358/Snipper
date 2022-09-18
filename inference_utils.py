@@ -429,7 +429,7 @@ def save_results_3d(
                 ] = {
                     "x": float((w / 2) - x),
                     "y": float(y - (y / 2)),
-                    "z": float(z),
+                    "z": float(-z),
                     "score": float(score),
                 }
 
