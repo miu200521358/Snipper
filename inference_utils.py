@@ -411,6 +411,7 @@ def save_results_3d(
             json_datas[int(pid)][frame_idx] = {
                 "snipper": {
                     "image": {
+                        "path": os.path.join(data_dir, filename),
                         "width": float(w),
                         "height": float(h),
                     },
