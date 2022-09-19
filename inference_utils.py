@@ -397,6 +397,8 @@ def save_results_3d(
     json_datas = {}
     for frame_idx in tqdm(all_frames_results.keys()):
         filename = all_filenames[frame_idx]
+        # ファイル名をそのままフレーム番号として扱う
+        fno = int(os.path.split(filename)[0])
         img = cv2.imread("{}/{}".format(data_dir, filename))
         h, w, _ = img.shape
 
@@ -408,7 +410,7 @@ def save_results_3d(
 
             bbx = bbox_2d_padded(kpt_3d, 0.3, 0.3)
 
-            json_datas[int(pid)][frame_idx] = {
+            json_datas[int(pid)][fno] = {
                 "snipper": {
                     "image": {
                         "path": os.path.join(data_dir, filename),
