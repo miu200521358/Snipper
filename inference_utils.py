@@ -435,7 +435,7 @@ def save_results_3d(
                 }
 
     for pid, json_data in json_datas.items():
-        with open(os.path.join(result_dir, f"{pid:02d}.json"), mode="w") as f:
+        with open(os.path.join(result_dir, f"{pid:03d}.json"), mode="w") as f:
             json.dump(json_data, f, indent=4)
 
 
@@ -548,7 +548,7 @@ def save_visual_results_2d(
 
             cv2.putText(
                 img,
-                "{:02d}".format(pid),
+                "{:03d}".format(pid),
                 (bbx[0] + bbx[2] // 3, bbx[1] - 5),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 1,
@@ -668,7 +668,7 @@ def save_visual_results(
 
             cv2.putText(
                 img,
-                "{:02d}".format(pid),
+                "{:03d}".format(pid),
                 (bbx[0] + bbx[2] // 3, bbx[1] - 5),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 1,
